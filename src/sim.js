@@ -53,6 +53,12 @@ export const BOARD_SIZE = 4;
  */
 export const RATES = [
   { label: "❚❚", days: 0, name: "Paused" },
+  // The slow rate exists for SURFACE work, not for travel. A Martian solar day
+  // is 24h 39m; at 3 days a second it flickers past in a third of a second, so
+  // waiting for sunrise at a site would be impossible to steer. Six hours a
+  // second makes a Martian day about four seconds long — slow enough to watch
+  // the terminator cross a landing site.
+  { label: "▷", days: 0.25, name: "6 hours a second" },
   { label: "▶", days: 3, name: "3 days a second" },
   { label: "▶▶", days: 20, name: "20 days a second" },
   { label: "▶▶▶", days: 120, name: "120 days a second" },
@@ -228,10 +234,12 @@ export const jobFor = (sim, featureId) => sim.board.includes(featureId);
  * also quietly forgives a misread clue that happened to land somewhere useful,
  * which is a kinder failure mode for a child than "wrong ship, no points".
  */
-export function shoot(sim, featureId, tier) {
+export function shoot(sim, featureId, tier, lightBonus = 0) {
   if (!sim.board.includes(featureId)) return { sim, hit: false, points: 0 };
 
-  const points = 100 + ({ easy: 0, medium: 40, hard: 90 }[tier] ?? 0);
+  // lightBonus rewards catching a site under a low, raking sun and docks a
+  // little for shooting at local noon, when the landscape washes out flat.
+  const points = Math.max(10, 100 + ({ easy: 0, medium: 40, hard: 90 }[tier] ?? 0) + lightBonus);
   const board = sim.board.filter((id) => id !== featureId);
   const queue = [...sim.queue];
   if (queue.length) board.push(queue.shift());

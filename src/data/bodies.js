@@ -188,3 +188,84 @@ export const DELTA_V_FROM_LEO = {
   triton: { orbit: 8.9, land: 9.2 },
   pluto: { orbit: 9.2, land: 9.4, note: "Flying past is cheap. Stopping is what costs." },
 };
+
+// ---------------------------------------------------------------------------
+// ROTATION — what makes the day/night terminator move.
+//
+// `solarDayH` is the SOLAR day (noon to noon), not the sidereal rotation. They
+// differ because the body moves along its orbit while it spins: Mars turns on
+// its axis in 24h 37m but its solar day is 24h 39m 35s, and Venus's solar day
+// (117 Earth days) is nothing like its 243-day retrograde spin. The solar day
+// is the one a person standing on the surface would experience, so it is the
+// one the game uses and the one worth teaching.
+//
+// Every big moon here is tidally locked to its planet, so its solar day is its
+// orbital period — which is why a day on Titan is sixteen Earth days long and
+// a day on Io is under two.
+//
+// `obliquity` is the axial tilt in degrees, which is what gives a body seasons
+// and moves the sub-solar point north and south through its year. Uranus's 98°
+// is the reason its poles get 42 years of continuous daylight.
+//
+// ⚠ RATES ARE REAL; PHASE IS NOT YET ANCHORED. See src/illumination.js — the
+// terminator sweeps at the correct speed and features enter and leave daylight
+// on the correct cycle, but WHICH meridian faces the Sun on a given calendar
+// date is not tied to a real epoch yet. The game may therefore teach day
+// length (true) but must never claim a specific date's lighting at a specific
+// site (not yet true). Fixing it needs the IAU rotational elements W0 and Ẇ
+// plus pole orientation.
+// ---------------------------------------------------------------------------
+export const ROTATION = {
+  mercury: { solarDayH: 4222.6, obliquity: 0.034 },   // solar day ~176 Earth days
+  venus:   { solarDayH: 2802.0, obliquity: 177.36 },  // retrograde; day shorter than its year
+  earth:   { solarDayH: 24.0,   obliquity: 23.44 },
+  mars:    { solarDayH: 24.6597, obliquity: 25.19 },
+  jupiter: { solarDayH: 9.925,  obliquity: 3.13 },
+  saturn:  { solarDayH: 10.656, obliquity: 26.73 },
+  uranus:  { solarDayH: 17.24,  obliquity: 97.77 },
+  neptune: { solarDayH: 16.11,  obliquity: 28.32 },
+  pluto:   { solarDayH: 153.29, obliquity: 122.53 },
+
+  // Tidally locked moons: solar day = orbital period, from MOONS above.
+  luna:      { solarDayH: 29.5306 * 24, obliquity: 23.44, locked: true }, // synodic month
+  phobos:    { solarDayH: 0.31891 * 24, obliquity: 25.19, locked: true },
+  deimos:    { solarDayH: 1.26244 * 24, obliquity: 25.19, locked: true },
+  io:        { solarDayH: 1.769138 * 24, obliquity: 3.13, locked: true },
+  europa:    { solarDayH: 3.551181 * 24, obliquity: 3.13, locked: true },
+  ganymede:  { solarDayH: 7.154553 * 24, obliquity: 3.13, locked: true },
+  callisto:  { solarDayH: 16.689018 * 24, obliquity: 3.13, locked: true },
+  mimas:     { solarDayH: 0.942422 * 24, obliquity: 26.73, locked: true },
+  enceladus: { solarDayH: 1.370218 * 24, obliquity: 26.73, locked: true },
+  tethys:    { solarDayH: 1.887802 * 24, obliquity: 26.73, locked: true },
+  dione:     { solarDayH: 2.736915 * 24, obliquity: 26.73, locked: true },
+  rhea:      { solarDayH: 4.518212 * 24, obliquity: 26.73, locked: true },
+  titan:     { solarDayH: 15.945421 * 24, obliquity: 26.73, locked: true },
+  iapetus:   { solarDayH: 79.3215 * 24, obliquity: 26.73, locked: true },
+  miranda:   { solarDayH: 1.413479 * 24, obliquity: 97.77, locked: true },
+  ariel:     { solarDayH: 2.520379 * 24, obliquity: 97.77, locked: true },
+  umbriel:   { solarDayH: 4.144177 * 24, obliquity: 97.77, locked: true },
+  titania:   { solarDayH: 8.705872 * 24, obliquity: 97.77, locked: true },
+  oberon:    { solarDayH: 13.463239 * 24, obliquity: 97.77, locked: true },
+  triton:    { solarDayH: 5.876854 * 24, obliquity: 28.32, locked: true },
+  charon:    { solarDayH: 6.3872 * 24, obliquity: 122.53, locked: true },
+};
+
+/**
+ * How long a day lasts here, said the way a person would say it.
+ *
+ * Short days carry SECONDS on purpose. Mars's solar day is 24h 39m 35s, and
+ * rounding it to "24h 40m" throws away the very thing that makes it worth
+ * saying — that it is tantalisingly close to ours, and not the same.
+ */
+export function saySolarDay(bodyId) {
+  const r = ROTATION[bodyId];
+  if (!r) return null;
+  const h = r.solarDayH;
+  if (h < 48) {
+    const total = Math.round(h * 3600);
+    const hh = Math.floor(total / 3600), mm = Math.floor((total % 3600) / 60), ss = total % 60;
+    return ss ? `${hh}h ${mm}m ${ss}s` : `${hh}h ${mm}m`;
+  }
+  const d = h / 24;
+  return d < 400 ? `${d.toFixed(1)} Earth days` : `${(d / 365.25).toFixed(1)} Earth years`;
+}

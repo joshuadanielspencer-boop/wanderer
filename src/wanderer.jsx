@@ -16,6 +16,8 @@ import { project, orbitPath, moonLongitude, sayLightTime, sayDistance, logRadius
 import { transferOptions } from "./transfer.js";
 import { SYSTEMS, SYSTEM_BY_ID, MOONS, DELTA_V_FROM_LEO } from "./data/bodies.js";
 import { FEATURES_BY_BODY } from "./data/features.js";
+import { isLit, sunAltitude, lightQuality, nightSpans, nextSunrise } from "./illumination.js";
+import { saySolarDay } from "./data/bodies.js";
 import {
   newSim, advance, nextEvent, orderTransfer, standDown, craftPosition, craftPath,
   shoot, simStatus, featureById, RATES, END_DATE, START_DATE,
@@ -46,6 +48,7 @@ export default function Wanderer() {
   const [result, setResult] = useState(null);
   const [feature, setFeature] = useState(null);    // free look inspection
   const [notice, setNotice] = useState(null);
+  const [darkSite, setDarkSite] = useState(null);   // clicked a site in local night
   const [tier, setTier] = useState("easy");
   const [trueScale, setTrueScale] = useState(false);
 
@@ -152,6 +155,7 @@ export default function Wanderer() {
       if (e.key === " " && sim && !transfer && !result) { e.preventDefault(); setRate(sim.rateIdx ? 0 : 1); return; }
       if (e.key !== "Escape") return;
       if (transfer) return setTransfer(null);
+      if (darkSite) return setDarkSite(null);
       if (result) return setResult(null);
       if (feature) return setFeature(null);
       back();
@@ -167,9 +171,20 @@ export default function Wanderer() {
     // is decoration and the entire travel layer is optional.
     const here = sim.craft.some((c) => c.status !== "transit" && c.at === view.system);
     if (!here) return setNotice(`No ship is at ${SYSTEM_BY_ID[view.system]?.name}. Send one first.`);
-    const r = shoot(sim, f.id, tier);
+
+    // And it has to be daylight. This is the whole point of the terminator:
+    // arriving at the right place at the wrong local time is now a real miss.
+    const alt = sunAltitude(view.body, f.lat, f.lonE, sim.t);
+    if (alt <= 0) return setDarkSite({ f, body: view.body });
+
+    const q = lightQuality(alt);
+    // A raking sun throws long shadows and shows relief; an overhead sun washes
+    // the landscape flat. Real imaging campaigns are planned around exactly
+    // this, so it is worth points rather than just a caption.
+    const bonus = q.key === "raking" ? 50 : q.key === "flat" ? -25 : 0;
+    const r = shoot(sim, f.id, tier, bonus);
     setSim(r.sim);
-    setResult({ f, ...r });
+    setResult({ f, ...r, quality: q, alt });
   };
 
   if (sim && status !== "running") {
@@ -195,12 +210,17 @@ export default function Wanderer() {
                 selected={selected} onSelect={setSelected} onOpen={clickSystem} sim={sim} ship={ship} />
             )}
             {view.level === "system" && <SystemView systemId={view.system} date={new Date(now)} onOpen={openBody} />}
-            {view.level === "body" && <BodyView bodyId={view.body} onPick={onPick} picked={feature} hideNames={!!sim} />}
+            {view.level === "body" && (
+              <BodyView bodyId={view.body} onPick={onPick} picked={feature} hideNames={!!sim} t={now} />
+            )}
           </svg>
         </div>
 
         <aside style={S.panel} aria-live="polite">
-          {result ? <ShotResult r={result} onClose={() => setResult(null)} />
+          {darkSite ? <DarkSiteCard d={darkSite} t={sim.t}
+                        onWait={(until) => { setSim((sm) => advance(sm, until).sim); setDarkSite(null); }}
+                        onClose={() => setDarkSite(null)} />
+            : result ? <ShotResult r={result} onClose={() => setResult(null)} />
             : sim ? <FleetPanel sim={sim} ship={ship} setShip={setShip} tier={tier} view={view}
                       onStandDown={(id) => setSim((s) => standDown(s, id))} />
               : feature ? <FeatureCard f={feature} tier={tier} onClose={() => setFeature(null)} />
@@ -559,6 +579,12 @@ function ShotResult({ r, onClose }) {
     <Pane title={f.name} onClose={onClose}>
       <div style={S.points}>+{r.points}</div>
       <div style={S.subject}>{f.subject}</div>
+      {r.quality && (
+        <div style={{ ...S.small, marginBottom: 10 }}>
+          <b style={{ color: r.quality.key === "raking" ? "var(--gold)" : "inherit" }}>{r.quality.label}</b>
+          {" — "}{r.quality.note} Sun {r.alt.toFixed(0)}° above the horizon.
+        </div>
+      )}
       <p style={S.p}>{f.fact}</p>
       <div style={S.compare}>
         <div style={S.compareLabel}>To give you a sense of it</div>{f.earthComparison}
@@ -570,6 +596,43 @@ function ShotResult({ r, onClose }) {
       </div>
       <ConfidenceLine f={f} />
       <button style={S.cta} onClick={onClose}>Back to the fleet</button>
+    </Pane>
+  );
+}
+
+/**
+ * You pointed the camera at the night side.
+ *
+ * Deliberately not a punishment card. It names the real reason, gives the real
+ * day length, and offers to wait — because the lesson is that lighting is
+ * something you PLAN for, and the fix is patience rather than a lost turn.
+ */
+function DarkSiteCard({ d, t, onWait, onClose }) {
+  const rise = nextSunrise(d.body, d.f.lat, d.f.lonE, t);
+  const hours = rise ? (rise - t) / 3600000 : null;
+  return (
+    <Pane title="Local night" onClose={onClose}>
+      <p style={S.p}>
+        It is the middle of the night at that site. The Sun is below the horizon and
+        there is nothing there to photograph.
+      </p>
+      <Stat label="A day here lasts" value={saySolarDay(d.body) || "—"} />
+      {rise ? (
+        <>
+          <Stat label="Sunrise in"
+            value={hours < 48 ? `${hours.toFixed(1)} hours` : `${(hours / 24).toFixed(1)} days`} />
+          <button style={S.cta} onClick={() => onWait(rise)}>Wait for sunrise</button>
+        </>
+      ) : (
+        <div style={S.warn}>
+          This site is in polar night — it will not see the Sun again for a season.
+          Come back when the year has turned, or photograph somewhere else.
+        </div>
+      )}
+      <p style={{ ...S.small, marginTop: 12 }}>
+        Every real imaging campaign is planned around light. A low sun casts long
+        shadows and shows relief; an overhead sun washes a landscape flat.
+      </p>
     </Pane>
   );
 }
@@ -734,7 +797,7 @@ function SystemView({ systemId, date, onOpen }) {
   );
 }
 
-function BodyView({ bodyId, onPick, picked, hideNames }) {
+function BodyView({ bodyId, onPick, picked, hideNames, t }) {
   const [plate, setPlate] = useState(true);
   useEffect(() => { setPlate(true); }, [bodyId]);
   const feats = FEATURES_BY_BODY[bodyId] || [];
@@ -761,6 +824,19 @@ function BodyView({ bodyId, onPick, picked, hideNames }) {
         ) : <rect x={X0} y={Y0} width={W} height={H} fill={color} opacity={0.30} />}
         <rect x={X0} y={Y0} width={W} height={H} fill="url(#plateFall)" />
       </g>
+      {/* The night side. Clipped to the plate and drawn as per-longitude strips
+          from nightSpans(), which the test holds in agreement with isLit() —
+          a pin that LOOKS lit but refuses the shot would be the worst bug
+          available here. */}
+      <g clipPath="url(#plateClip)">
+        {nightSpans(bodyId, t, 120).map((sp, i) => (
+          <rect key={i} x={px(sp.lon0)} y={py(sp.latFrom)}
+            width={px(sp.lon1) - px(sp.lon0) + 0.6}
+            height={Math.max(0, py(sp.latTo) - py(sp.latFrom))}
+            fill="#04070E" opacity={0.74} />
+        ))}
+      </g>
+
       {[30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((l) => (
         <line key={l} x1={px(l)} y1={Y0} x2={px(l)} y2={Y0 + H} stroke="#fff" strokeOpacity={0.10} />
       ))}
@@ -776,15 +852,21 @@ function BodyView({ bodyId, onPick, picked, hideNames }) {
       <text x={X0} y={Y0 + H + 22} style={S.plateAxis}>0° east longitude → 360°</text>
       {feats.map((f) => {
         const x = px(f.lonE), y = py(f.lat), on = picked?.id === f.id;
+        const lit = isLit(bodyId, f.lat, f.lonE, t);
         return (
           <g key={f.id} role="button" tabIndex={0} style={{ cursor: "pointer" }}
-            aria-label={hideNames ? `An unnamed place at ${f.lat.toFixed(0)}° latitude.` : `${f.name}.`}
+            aria-label={`${hideNames ? `An unnamed place at ${f.lat.toFixed(0)}° latitude` : f.name}. ${lit ? "In daylight." : "In local night — nothing to photograph."}`}
             onClick={() => onPick(f)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(f); } }}>
             <circle cx={x} cy={y} r={18} fill="transparent" />
-            <circle cx={x} cy={y} r={on ? 9 : 6} fill={on ? "#F2B441" : "#fff"} stroke="#070A12" strokeWidth={2} />
+            {/* Hollow when dark, solid when lit: shape, not just brightness, so
+                the state survives a colourblind or low-contrast reading. */}
+            <circle cx={x} cy={y} r={on ? 9 : 6}
+              fill={lit ? (on ? "#F2B441" : "#fff") : "none"}
+              stroke={lit ? "#070A12" : (on ? "#F2B441" : "#6B7A93")} strokeWidth={2} />
             {!hideNames && (
-              <text x={x + 13} y={y + 5} style={{ ...S.pinLabel, textAnchor: "start", fill: "#C7D0E0" }}>{f.name}</text>
+              <text x={x + 13} y={y + 5}
+                style={{ ...S.pinLabel, textAnchor: "start", fill: lit ? "#C7D0E0" : "#6B7A93" }}>{f.name}</text>
             )}
           </g>
         );
