@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+# Builds the app and publishes dist/ to GitHub Pages on every push to main.
+#
+# This is a PROJECT site (https://<user>.github.io/<repo>/), so the app lives
+# under a subpath and is built with BASE_PATH=/<repo>/ to prefix every asset
+# URL. vite.config.js reads that env var; runtime asset URLs use
+# import.meta.env.BASE_URL. Nothing else needs to know.
+#
+# One-time setup: Settings → Pages → "Build and deployment → Source" =
+# "GitHub Actions".
+#
+# `npm test` runs before the build and will fail the deploy. That is deliberate:
+# the ephemeris suite is what stands between this game and a solar system that
+# looks right and is wrong. A build that skips it is worse than no build.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24   # match the dev machine, so npm's lockfile solver agrees
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,38 @@
+/* Wanderer — base styles. Desktop window is the target (design.md, rule 4). */
+
+:root {
+  --bg: #070A12;
+  --panel: #101725;
+  --panel-2: #161F31;
+  --line: #26324a;
+  --text: #E8EAF0;
+  --muted: #8A94A8;
+  --gold: #F2B441;
+  --hot: #E4713F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; }
+
+/* Accessibility is required, not optional (rule 4). Every interactive element
+   is reachable by keyboard and says so visibly when focused. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
