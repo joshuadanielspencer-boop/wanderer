@@ -6,13 +6,19 @@ Shutterbug's game, relocated to the solar system: read the clue, travel to the
 right world, photograph the right place, learn something true. Read
 [`docs/design.md`](docs/design.md) first — it is the whole plan, in two parts.
 
-**This repo currently contains phase 0 only: the spike.** It is not the game.
+**Current state: phase 0 (the map) + a vertical slice of the game.**
 
 ```bash
 npm install
 npm run dev     # → http://localhost:5273/
 npm test        # the ephemeris accuracy suite
 ```
+
+## Play
+
+Click **Begin a survey run**. You get a clue, a tank of propellant, and a charter
+that runs to 2050. Travelling costs Δv — and less of it if you wait for the
+launch window, which is the decision the whole slice exists to test.
 
 ## What the spike proves
 
@@ -29,18 +35,50 @@ npm test        # the ephemeris accuracy suite
 4. **The content shape holds** — clue ladder, fact, Earth comparison, name
    origin, confidence flag.
 
+## What the slice adds
+
+Real Hohmann transfers (`src/transfer.js`), verified against the published
+Earth→Mars figures: 259 days of flight, a 44° phase angle at departure, 5.6 km/s,
+and a 780-day synodic period. Every travel decision offers **leave now** versus
+**wait for the window**, priced honestly, with a diagram of why.
+
+Three pressures, not one: **propellant**, the **charter** (a career is finite),
+and the clue itself.
+
+Two things the slice taught us that were not obvious:
+
+- **Δv to the outer planets peaks near 15.5 AU and then falls.** It takes *less*
+  fuel to reach Neptune than Uranus. Nobody believes this at first; it is the
+  classic r₂/r₁ ≈ 15.58 result and it is now a test.
+- **Cost is synodic period, not distance.** Jupiter and Saturn align for a
+  minimum-energy transfer only once every ~20 years, so a Jupiter → Saturn
+  assignment could open with a 16-year wait before a 10-year flight. The run
+  planner now flies each run as it plans it and refuses anything the calendar
+  forbids. (Same fact that made Voyager's Grand Tour a once-in-176-years chance.)
+
+Run length is therefore **not always five** — it is as many assignments as the
+charter allows. Where you are sent determines how much you can do, which is the
+honest answer.
+
 ## What it does NOT have
 
-No run loop, no scoring, no profiles, no passport, no art, no sound, no PWA, no
-delta-v spending, no transfer-window enforcement. Phases 3–6.
+No profiles, no passport, no art, no sound, no PWA, no body imagery, and only
+eighteen hand-written features. Phases 1 and 5–6.
 
 ## Accuracy
 
-`npm test` checks the ephemeris against **independently published events** — the
-Mars, Jupiter, and Saturn oppositions of 2024–25, Earth's perihelion and
-aphelion distances, every planet's sidereal period, and Pluto's 1979–99 excursion
-inside Neptune's orbit. Current opposition agreement is **0.22°–0.30°**, which is
-the half-day slop from testing dates published to the day, not table error.
+`npm test` checks the physics against **independently published values**, never
+against itself:
+
+- **Ephemeris** — the Mars, Jupiter and Saturn oppositions of 2024–25, Earth's
+  perihelion and aphelion distances, every sidereal period, and Pluto's 1979–99
+  excursion inside Neptune's orbit. Opposition agreement is **0.22°–0.30°**,
+  which is the half-day slop from testing dates published to the day, not table
+  error.
+- **Transfers** — the textbook Earth→Mars and Earth→Venus figures, and the
+  Earth–Mars / Earth–Venus / Earth–Jupiter synodic periods to the day.
+- **Runs** — that every seeded run is winnable inside both the tank and the
+  charter. This one has already caught a real bug: runs were finishing in 2275.
 
 This matters more than it looks. A broken ephemeris still draws a solar system
 that goes round, and every number the game teaches would be quietly wrong.
@@ -62,6 +100,9 @@ See the header of each data file for the authority to check against.
 ```
 src/
   ephemeris.js     JPL Keplerian elements + Kepler solve. The file everything stands on.
+  transfer.js      Hohmann transfers, launch windows, light lag. What it costs to go.
+  run.js           The run: assignments, propellant, charter. Pure and testable.
+  rng.js           The one RNG. Seeded runs are reproducible.
   orrery.js        Projection: AU → pixels, with an honest log/linear toggle.
   wanderer.jsx     The spike UI — three views.
   data/
