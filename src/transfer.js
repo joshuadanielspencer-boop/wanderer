@@ -185,6 +185,58 @@ export function nextWindow(fromKey, toKey, date, maxDays = 20000) {
   return { date, waitDays: 0 }; // no window found: treat as "go now"
 }
 
+/** Kepler's equation in radians, for the transfer ellipse. */
+function solveKeplerRad(M, e) {
+  let E = M + e * Math.sin(M);
+  for (let i = 0; i < 40; i++) {
+    const dE = (M - (E - e * Math.sin(E))) / (1 - e * Math.cos(E));
+    E += dE;
+    if (Math.abs(dE) <= 1e-10) break;
+  }
+  return E;
+}
+
+/**
+ * Where a spacecraft actually is, a fraction `f` of the way through its
+ * transfer. Heliocentric, same frame as everything else.
+ *
+ * A straight line between departure and arrival would have been three lines of
+ * code and a lie. Spacecraft do not fly at planets; they fall around the Sun on
+ * an ellipse, and the shape of that fall is the single most useful thing a
+ * player can look at — it is why the journey takes years, and why you have to
+ * leave before the target is where you want it.
+ *
+ * A Hohmann transfer is exactly half of an ellipse whose perihelion touches the
+ * inner orbit and whose aphelion touches the outer one. So the craft always
+ * sweeps exactly 180° of heliocentric longitude, whichever way it is going —
+ * which is both the reason the phase angle works out and a free invariant for
+ * the test to hold us to.
+ *
+ * @param {number} r1  departure radius, AU
+ * @param {number} r2  arrival radius, AU
+ * @param {number} lon1 heliocentric longitude at departure, degrees
+ * @param {number} f    0 at departure, 1 at arrival
+ */
+export function transferPosition(r1, r2, lon1, f) {
+  const a = (r1 + r2) / 2;
+  const e = Math.abs(r2 - r1) / (r1 + r2);
+  const outbound = r2 >= r1;
+
+  // Outbound you leave from perihelion (M=0) and arrive at aphelion (M=π).
+  // Inbound is the same ellipse walked from the other end.
+  const M0 = outbound ? 0 : Math.PI;
+  const E = solveKeplerRad(M0 + Math.PI * Math.max(0, Math.min(1, f)), e);
+
+  const r = a * (1 - e * Math.cos(E));
+  let nu = 2 * Math.atan2(
+    Math.sqrt(1 + e) * Math.sin(E / 2),
+    Math.sqrt(1 - e) * Math.cos(E / 2)
+  );
+  if (nu < 0) nu += 2 * Math.PI;
+
+  return { r, lon: wrap360(lon1 + ((nu - M0) * 180) / Math.PI) };
+}
+
 /** Round-trip light time to Earth, in hours — how long a question takes. */
 export function askEarthHours(fromKey, date) {
   if (fromKey === "earth") return 0;

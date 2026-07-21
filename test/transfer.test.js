@@ -12,7 +12,7 @@
 // ===========================================================================
 import { describe, it, expect } from "vitest";
 import {
-  hohmann, synodicDays, circularSpeed, windowPenalty, transferOptions, nextWindow, askEarthHours,
+  hohmann, synodicDays, circularSpeed, windowPenalty, transferOptions, nextWindow, askEarthHours, transferPosition,
 } from "../src/transfer.js";
 
 const utc = (y, m, d) => new Date(Date.UTC(y, m - 1, d));
@@ -125,5 +125,46 @@ describe("asking Earth a question", () => {
     expect(mars).toBeGreaterThan(0.1).toBeLessThan(1.5);   // 6 min to 45 min round trip
     const pluto = askEarthHours("pluto", utc(2030, 1, 1));
     expect(pluto).toBeGreaterThan(8);                       // over 8 hours, each way ~4.5
+  });
+});
+
+describe("where the ship actually is", () => {
+  it("starts on the departure orbit and ends on the arrival orbit", () => {
+    for (const [r1, r2] of [[1, 1.524], [1, 5.204], [1, 0.723], [5.204, 1.524], [1, 1]]) {
+      const start = transferPosition(r1, r2, 40, 0);
+      const end = transferPosition(r1, r2, 40, 1);
+      expect(start.r).toBeCloseTo(r1, 6);
+      expect(end.r).toBeCloseTo(r2, 6);
+      expect(start.lon).toBeCloseTo(40, 6);
+    }
+  });
+
+  it("sweeps exactly 180° of longitude, outbound or inbound", () => {
+    // A Hohmann transfer is half an ellipse, so this is exact — and it is the
+    // same fact that makes the departure phase angle work out. If a change ever
+    // breaks it, the arc drawn on the orrery has stopped being the real orbit.
+    for (const [r1, r2] of [[1, 1.524], [1, 30.07], [9.58, 1], [1, 0.387]]) {
+      expect(transferPosition(r1, r2, 200, 1).lon).toBeCloseTo(20, 6); // 200 + 180
+    }
+  });
+
+  it("moves fastest near the Sun — Kepler's second law, visibly", () => {
+    // Outbound to Jupiter: the first tenth of the trip should cover far more
+    // longitude than the last tenth, because the ship is deep in the Sun's well
+    // at the start and crawling at aphelion by the end. A linear interpolation
+    // between endpoints — the version this replaced — would make these equal,
+    // and would teach a child that spacecraft cruise at constant speed.
+    const at = (f) => transferPosition(1, 5.204, 0, f).lon;
+    const first = at(0.1) - at(0);
+    const last = at(1) - at(0.9);
+    expect(first).toBeGreaterThan(last * 3);
+  });
+
+  it("never leaves the band between the two orbits", () => {
+    for (let f = 0; f <= 1.0001; f += 0.02) {
+      const p = transferPosition(1, 9.58, 0, f);
+      expect(p.r).toBeGreaterThanOrEqual(1 - 1e-9);
+      expect(p.r).toBeLessThanOrEqual(9.58 + 1e-9);
+    }
   });
 });

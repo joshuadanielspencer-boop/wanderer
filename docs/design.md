@@ -383,6 +383,139 @@ work and the kind that can happen in parallel with the code.
 
 ---
 
+# Part 1.5 — What the first playtest changed
+
+Joshua played the vertical slice on **2026-07-21**. Three findings, and they
+reshaped the build order. Recorded here rather than left in chat, for the same
+reason Shutterbug keeps `design-notes.md`.
+
+## 1.5.1 The verdict on the core bet
+
+**The launch-window decision is interesting** — he went both ways on it, which is
+the only evidence that matters for a choice mechanic. A choice you always answer
+the same way is a tax, not a decision.
+
+**The timescales read as epic, not tedious.** Runs ending in 2044 landed as
+awe rather than boredom. That is a green light for keeping honest Hohmann
+transfers instead of inventing a fast drive.
+
+## 1.5.2 Parallel missions are what RESCUE the tension
+
+The most important thing the playtest surfaced, and it is a trap we were walking
+into.
+
+Add time controls — fast-forward, skip-to-next-event — and **waiting for a launch
+window stops costing anything.** It becomes a button press. The entire trade the
+slice is built on (propellant against time) quietly evaporates, because
+subjective time is free.
+
+**Parallel missions put the cost back.** Waiting is only expensive if that ship
+could have been doing something else. With three craft under way and a fourth in
+dock, "wait 19 months for the cheap window" means 19 months of that hull earning
+nothing while the Mars shuttle turns three cycles. That is a real opportunity
+cost, and it is the calculation actual agencies make.
+
+> **Therefore: time controls and parallel missions must ship together.** Time
+> controls alone trivialise waiting. Parallel missions alone are unbearable
+> without fast-forward. Neither is safe to build on its own.
+
+It also dissolves a wart the slice already has: run length varying from two to
+five because the dice sent you to Saturn. With a fleet you fill the charter with
+parallel work instead.
+
+Architecturally this is the big one — the game stops being a turn-based sequence
+and becomes a **continuous simulation with an event queue**. Better done before
+more content, because it redefines what a run is.
+
+## 1.5.3 Light lag bites when you zoom IN, not out
+
+Lag felt like decoration in the slice, and the reason is a scale mismatch worth
+stating plainly:
+
+> Transit is **months**. Lag is **hours**. Hours do not register against months.
+> **Light lag is invisible at the interplanetary scale and absolute at the
+> operational scale.**
+
+An operation takes seconds to minutes. Against that, hours of lag is total. So
+the mechanic is not "your hint arrives late" — it is **"you are not there, and
+you cannot be."** Four ways to cash that in, best bet first:
+
+**1. Commit-blind operations.** You do not perform an action at range; you write
+a plan, send it, and it executes without you. Mars entry, descent and landing
+takes about seven minutes against 4–22 minutes of one-way lag — the landing is
+over before Earth knows it began. ("The seven minutes of terror" is not drama;
+nobody can intervene, ever.) You choose descent profile, camera pointing and
+abort conditions, then watch. Difficulty scales with distance automatically, with
+no knob to tune.
+
+**2. Rover driving as batch commands.** Real Mars rovers are not joysticked — the
+team sends a day's plan and reads the results tomorrow. Study yesterday's images,
+write today's route, find out tomorrow whether you drove into a sand trap.
+
+**3. The one-pass flyby.** One encounter, pre-programmed months ahead, exactly as
+New Horizons did at Pluto. Point the camera wrong and you get nothing, and you
+learn that four hours later.
+
+**4. Stale advice, not merely late advice.** At Neptune a message you receive was
+written 4.1 hours ago about a situation that has changed; your mentor is
+answering a question you no longer have. Costs nothing to implement — it is a
+display choice — and it is the whole *For All Mankind* emotional engine.
+
+Two things fall out for free:
+- **Autonomy becomes a real upgrade path**, which is literally why spacecraft
+  carry autonomous systems, and it slots into Part 2's tech tree.
+- **The ship's AI stops being flavour and becomes necessary** — it is the only
+  real-time voice available out there. As you travel outward the human voice
+  fades and the ship's takes over because physics says so, not because we wrote
+  it that way.
+
+⚠ **Kid-mode caveat.** Commit-blind is frustrating for a nine-year-old. Lag is
+displayed and taught in the lower tiers and never punishes; it takes the wheel
+only in the higher ones.
+
+## 1.5.4 Body maps are the missing rung, and the terminator is the fusion point
+
+The deduction chain currently has a hole. System → body is a real choice. Body →
+feature is *"click the only pin."* In Shutterbug the equivalent step — which city
+on this continent — is the most satisfying part of the game. Here it does not yet
+exist.
+
+Real imagery plus more features is what makes that a step. Five consequences:
+
+1. **Terrain becomes the clue.** A hard clue can describe what something *looks
+   like* and you find it by reading the map. A different skill from recall, and
+   the most genuinely "photo safari" thing in the game.
+2. **The terminator — build this first.** A real map, plus the date, plus the
+   body's rotation gives a day/night line, and **you cannot photograph the night
+   side.** Arriving at the right place at the wrong local time becomes a failure.
+   This is the piece that fuses everything: it takes the calendar we already have
+   and makes it matter at the operational scale — the same scale where lag lives.
+   The two mechanics reinforce each other.
+3. **Sun angle for detail.** Low sun means long shadows and visible relief; local
+   noon is flat and useless. Every real imaging campaign plans around this, so
+   the best photograph is the right subject at the right sun angle — a scoring
+   dimension rather than pass/fail.
+4. **Seasons.** Martian dust-storm season, Saturn's rings going edge-on, polar
+   caps growing and shrinking. All real, all on schedules the sim already knows.
+5. **Instrument quality as progression.** A coarse plate at first; better optics
+   reveal finer detail and unlock finer targets. Ties straight into Part 2.
+
+And the structural payoff: **the body map is where the two halves of the game
+meet.** It is the last rung of the kid-mode deduction *and* the siting board for
+the strategy layer, where a base's location depends on real terrain, polar ice,
+flat ground, and proximity to a resource. Real imagery pays for itself twice.
+
+## 1.5.5 Revised build order
+
+1. **The simulation layer** — clock, event queue, time controls, parallel craft.
+   Everything hangs off it.
+2. **Plates + terminator** — the cheapest way to make the new clock visibly
+   matter.
+3. **The gazetteer pipeline** — once we know what the game needs from content.
+4. Commit-blind operations, as a higher-difficulty tier.
+
+---
+
 # Part 2 — Brainstorm: the fuller game
 
 Not a build order. A map of where this can go, given that it has to stay
