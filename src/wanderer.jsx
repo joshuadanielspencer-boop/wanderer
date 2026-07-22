@@ -200,6 +200,8 @@ export default function Wanderer() {
         onQuit={() => { setSim(null); setShip(null); setResult(null); setView({ level: "orrery", system: null, body: null }); }}
       />
 
+      <Provisional />
+
       <div style={S.main}>
         <div style={S.stage}>
           <Breadcrumb view={view} back={back} />
@@ -561,7 +563,14 @@ const CONF = {
 };
 const ConfidenceLine = ({ f }) => {
   const [label, hint] = CONF[f.confidence] || CONF.inferred;
-  return <div style={S.conf}><b>{label}</b> — {hint}</div>;
+  return (
+    <div style={S.conf}>
+      <b>{label}</b> — {hint}
+      <div style={{ marginTop: 4, opacity: 0.75 }}>
+        (How settled the science is — not a check that this card is right. See the draft notice.)
+      </div>
+    </div>
+  );
 };
 
 function ShotResult({ r, onClose }) {
@@ -879,6 +888,34 @@ function BodyView({ bodyId, onPick, picked, hideNames, t }) {
 // ===========================================================================
 // Shared
 // ===========================================================================
+/**
+ * Says out loud that the content is a draft.
+ *
+ * Not optional politeness. The feature cards carry a confidence badge reading
+ * "Measured — directly observed or measured by spacecraft", which describes how
+ * settled the SCIENCE is and says nothing about whether anyone checked that the
+ * claim on the card is real. The eighteen features in this build were written
+ * from memory in one pass, coordinates included. A badge that looks vetted on
+ * top of unvetted content is worse than plain text would be, and this is a
+ * teaching tool for children (project rule 2).
+ *
+ * Delete this component the day src/data/features.js is generated from the IAU
+ * Gazetteer and every fact carries a source.
+ */
+function Provisional() {
+  const [gone, setGone] = useState(false);
+  if (gone) return null;
+  return (
+    <div style={S.provisional} role="note">
+      <b>Draft content.</b> The facts, figures and coordinates in this build were
+      written from memory and have <b>not</b> been checked against a source yet —
+      so please don't learn from them. The orbital mechanics underneath them
+      <i> are</i> real and tested.
+      <button style={S.noticeX} onClick={() => setGone(true)} aria-label="Dismiss">✕</button>
+    </div>
+  );
+}
+
 function Notice({ text, onClose }) {
   useEffect(() => { const id = setTimeout(onClose, 6000); return () => clearTimeout(id); }, [text]);
   return (
@@ -958,6 +995,10 @@ const S = {
   crumbText: { fontSize: 12, color: "var(--muted)", letterSpacing: 0.5 },
   backBtn: { background: "var(--panel-2)", border: "1px solid var(--line)", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 13 },
   kbd: { fontSize: 10, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 4px", marginLeft: 6 },
+  provisional: {
+    position: "relative", background: "rgba(228,113,63,0.13)", borderBottom: "1px solid rgba(228,113,63,0.45)",
+    padding: "7px 40px 7px 20px", fontSize: 12.5, lineHeight: 1.5, color: "#EBD9CF",
+  },
   notice: { position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 3,
     background: "var(--panel-2)", border: "1px solid var(--gold)", borderRadius: 8, padding: "8px 34px 8px 14px", fontSize: 13 },
   noticeX: { position: "absolute", right: 8, top: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)" },
