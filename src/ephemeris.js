@@ -78,6 +78,19 @@ export const ELEMENTS = {
     a: [30.06992276, 0.00026291], e: [0.00859048, 0.00005105], I: [1.77004347, 0.00035372],
     L: [-55.12002969, 218.45945325], w: [44.96476227, -0.32241464], O: [131.78422574, -0.00508664],
   },
+  // Ceres — the largest body in the asteroid belt, and the game's stand-in for
+  // "the Belt" as a destination (a region has no ephemeris; its biggest member
+  // does). Elements are the standard J2000 osculating set.
+  //
+  // ⚠ APPROXIMATE. Unlike the planets above, these carry no per-century rate
+  // terms except mean longitude, because Standish's table does not cover minor
+  // bodies. Over the campaign's span that is fine for a game board and is NOT
+  // fine for a trajectory. Ceres' eccentricity (0.076) and 10.6° inclination
+  // are real and large enough to matter, so this is flagged rather than buried.
+  ceres: {
+    a: [2.76916515, 0], e: [0.07600903, 0], I: [10.59406704, 0],
+    L: [249.89133, 7814.4], w: [153.90198, 0], O: [80.30553, 0],
+  },
   pluto: {
     a: [39.48211675, -0.00031596], e: [0.24882730, 0.00005170], I: [17.14001206, 0.00004818],
     L: [238.92903833, 145.20780515], w: [224.06891629, -0.04062942], O: [110.30393684, -0.01183482],

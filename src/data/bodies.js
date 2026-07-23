@@ -47,8 +47,11 @@ export const SYSTEMS = [
     blurb: "The tallest volcano and the longest canyon in the solar system are both here.",
   },
   {
-    id: "belt", name: "The Asteroid Belt", kind: "belt", ephemerisKey: null, auHint: 2.7,
-    color: "#8A8073", radiusKm: null,
+    // The belt is a region, but a destination needs a position — so it travels
+    // as its largest member. Ceres is 25% of the belt's entire mass, so this is
+    // less of a fudge than it looks.
+    id: "belt", name: "The Asteroid Belt", kind: "belt", ephemerisKey: "ceres", auHint: 2.77,
+    color: "#8A8073", radiusKm: 473,
     blurb: "Not a crowded field of rocks. Millions of objects, and so far apart that spacecraft cross without aiming.",
   },
   {
@@ -101,6 +104,18 @@ export const SYSTEM_BY_ID = Object.fromEntries(SYSTEMS.map((s) => [s.id, s]));
 // ---------------------------------------------------------------------------
 const moon = (id, name, aKm, periodDays, radiusKm, note) =>
   ({ id, name, aKm, periodDays, radiusKm, epochLon: 0, note });
+
+// Belt bodies. Not moons, but they occupy the same layer of the game's ladder —
+// things you visit inside a system. Their orbits are heliocentric and close
+// enough to each other that the system view can place them schematically.
+export const BELT_BODIES = [
+  { id: "ceres", name: "Ceres", aAU: 2.769, radiusKm: 473,
+    note: "A dwarf planet, roughly a quarter water by mass. Escape velocity about 510 m/s — you could nearly jump off it." },
+  { id: "psyche", name: "Psyche", aAU: 2.923, radiusKm: 111,
+    note: "Apparently a largely metallic body: possibly the stripped core of a shattered protoplanet." },
+  { id: "vesta", name: "Vesta", aAU: 2.362, radiusKm: 262.7,
+    note: "Dry, rocky and differentiated — a survivor of the early solar system with a basaltic crust." },
+];
 
 export const MOONS = {
   earth: [
