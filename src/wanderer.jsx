@@ -249,9 +249,14 @@ function Header({ sim, freeDate, setFreeDate, setRate, skip, trueScale, setTrueS
 
   return (
     <header style={S.header}>
-      <div>
-        <div style={S.title}>WANDERER</div>
-        <div style={S.sub}>a solar system photo safari</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <a href="#/" title="All systems" aria-label="Back to all systems"
+          style={{ textDecoration: "none", color: "var(--muted)", fontSize: 18, border: "1px solid var(--line)",
+            borderRadius: 8, padding: "3px 10px", background: "var(--panel-2)" }}>☰</a>
+        <div>
+          <div style={S.title}>SOLBOUND</div>
+          <div style={S.sub}>the fleet — a live solar system</div>
+        </div>
       </div>
 
       {sim ? (
@@ -837,12 +842,15 @@ function BodyView({ bodyId, onPick, picked, hideNames, t }) {
           from nightSpans(), which the test holds in agreement with isLit() —
           a pin that LOOKS lit but refuses the shot would be the worst bug
           available here. */}
-      <g clipPath="url(#plateClip)">
+      {/* Group opacity, not per-rect: opaque columns composited once, so the
+          overlaps that close subpixel gaps can't double-darken into vertical
+          seams (a picket-fence artefact that stacking translucent rects gives). */}
+      <g clipPath="url(#plateClip)" opacity={0.74}>
         {nightSpans(bodyId, t, 120).map((sp, i) => (
-          <rect key={i} x={px(sp.lon0)} y={py(sp.latFrom)}
-            width={px(sp.lon1) - px(sp.lon0) + 0.6}
+          <rect key={i} x={px(sp.lon0) - 0.6} y={py(sp.latFrom)}
+            width={px(sp.lon1) - px(sp.lon0) + 1.2}
             height={Math.max(0, py(sp.latTo) - py(sp.latFrom))}
-            fill="#04070E" opacity={0.74} />
+            fill="#04070E" />
         ))}
       </g>
 
